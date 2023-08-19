@@ -10,6 +10,8 @@
 
 mod iter;
 pub use iter::*;
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug)]
 pub struct GenArena<T> {
@@ -69,7 +71,7 @@ impl<T> GenArena<T> {
         self.entries.reserve_exact(added_capacity);
         let reserve_start = self.entries.len();
         for i in 0..(added_capacity-1) {
-            self.entries.push(Entry::Free { next_generation: 0, next_free: Some(reserve_start + i) });
+            self.entries.push(Entry::Free { next_generation: 0, next_free: Some(reserve_start + i + 1) });
         }
         self.entries.push(Entry::Free { next_generation: 0, next_free: self.next_free });
         self.next_free = Some(reserve_start);
@@ -122,7 +124,7 @@ impl<T> GenArena<T> {
 
     /// Push `T` into the arena.
     pub fn push(&mut self, value: T) -> Index {
-        match self.next_free {
+        match dbg!(self.next_free) {
             Some(next_free) => {
                 self.force_insert_at(next_free, value)
             },
