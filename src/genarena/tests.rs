@@ -18,7 +18,6 @@ fn insert_get() {
 #[test]
 fn insert_get_no_capacity() {
     let mut arena = GenArena::with_capacity(0);
-    dbg!(&arena);
     assert_eq!(arena.push(10), Index::new(0, 0));
     assert_eq!(arena.push(9), Index::new(1, 0));
     assert_eq!(arena.push(8), Index::new(2, 0));
@@ -43,21 +42,24 @@ fn insert_get_full() {
 #[test]
 fn iter() {
     let mut arena = GenArena::with_capacity(4);
-    for i in 0..4 {
+    for i in 0..6 {
         arena.push(i as u64);
     }
+    arena.remove(Index::new(2, 0));
+    arena.remove(Index::new(5, 0));
     let mut iter = arena.iter();
+    dbg!(&iter);
     assert_eq!(iter.next(), Some((Index::new(0, 0), &0)));
     assert_eq!(iter.next(), Some((Index::new(1, 0), &1)));
-    assert_eq!(iter.next(), Some((Index::new(2, 0), &2)));
     assert_eq!(iter.next(), Some((Index::new(3, 0), &3)));
+    dbg!(&iter);
+    assert_eq!(iter.next(), Some((Index::new(4, 0), &4)));
     assert_eq!(iter.next(), None);
 }
 
 #[test]
 fn removals() {
     let mut arena = GenArena::with_capacity(0);
-    dbg!(&arena);
     let idx1 = arena.push(10);
     let idx2 = arena.push(9);
     let idx3 = arena.push(8);

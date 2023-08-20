@@ -19,6 +19,7 @@ impl<'a, T> IntoIterator for &'a mut GenArena<T> {
 #[derive(Debug, Clone)]
 pub struct Iter<'a, T> {
     pub (super) entries: &'a [Entry<T>],
+    /// The total length, including Free + Occupied. Used for ExactSizeIterator
     pub (super) tot_length: usize,
     pub (super) seen: usize,
     pub (super) curr: usize,
@@ -28,7 +29,7 @@ impl <'a, T> Iterator for Iter<'a, T> {
     type Item = (Index, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        for i in self.curr..self.tot_length {
+        for i in self.curr..self.entries.len() {
             self.curr += 1;
             if let Entry::Occupied { generation, value } = &self.entries[i] {
                 self.seen += 1;
@@ -55,6 +56,7 @@ impl<'a, T> ExactSizeIterator for Iter<'a, T> {
 #[derive(Debug)]
 pub struct IterMut<'a, T> {
     pub (super) entries: &'a mut [Entry<T>],
+    /// The total length, including Free + Occupied. Used for ExactSizeIterator
     pub (super) tot_length: usize,
     pub (super) curr: usize,
     pub (super) seen: usize,
@@ -64,7 +66,7 @@ impl <'a, T> Iterator for IterMut<'a, T> {
     type Item = (Index, &'a mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        for i in self.curr..self.tot_length {
+        for i in self.curr..self.entries.len() {
             self.curr += 1;
             if let Entry::Occupied { generation, value } = &mut self.entries[i] {
                 self.seen += 1;

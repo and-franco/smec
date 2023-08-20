@@ -124,7 +124,7 @@ impl<T> GenArena<T> {
 
     /// Push `T` into the arena.
     pub fn push(&mut self, value: T) -> Index {
-        match dbg!(self.next_free) {
+        match self.next_free {
             Some(next_free) => {
                 self.force_insert_at(next_free, value)
             },
