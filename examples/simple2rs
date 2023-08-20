@@ -1,0 +1,153 @@
+#![allow(dead_code)]
+
+// use smec::{define_entity};
+use std::rc::Weak;
+
+#[derive(Clone, Debug)]
+pub struct A {
+    _n: i32
+}
+
+impl smec::Component<EntityRef> for A {
+    fn set(self, entity: &mut EntityRef) {
+        let current = entity.__component__;
+        if let Some(storage) = entity.components_storage.upgrade() {
+            unsafe {
+                if let Some(current) = current {
+                    if let Some(old) = (*storage.get()).__component__.get_mut(current)  {
+                        *old = self;
+                        return;
+                    }
+                }
+                entity.__component__ = Some((*storage.get()).__component__.insert(self));
+            }
+        } else {
+            unreachable!()
+        }
+    }
+
+    fn get(entity: &EntityRef) -> Option<&A> {
+        if let Some(current) = entity.__component__ {
+            if let Some(storage) = entity.components_storage.upgrade() {
+                unsafe {
+                    (*storage.get()).__component__.get(current)
+                }
+            } else {
+                unreachable!()
+            }
+        } else {
+            None
+        }
+    }
+
+    fn get_mut(entity: &mut EntityRef) -> Option<&mut A> {
+        if let Some(current) = entity.__component__ {
+            if let Some(storage) = entity.components_storage.upgrade() {
+                // SAFETY: a bit more debatable, if we have 2 EntityRef mutable at the same time this is a violation
+                // of safety !!BUT!! this is technically not possible because all EntityRef are stored in the arena,
+                // and there is no get2(..) method in there.
+                // we also cannot (or should not if this is not implemented yet) be able to construct EntityRef ourselves
+                unsafe {
+                    (*storage.get()).__component__.get_mut(current)
+                }
+            } else {
+                unreachable!()
+            }
+        } else {
+            None
+        }
+    }
+
+    fn remove(entity: &mut EntityRef) -> Option<Box<A>> {
+        if let Some(current) = entity.__component__ {
+            if let Some(storage) = entity.components_storage.upgrade() {
+                // SAFETY: in theory we only access the component of the entity from the storage,
+                // so this is safe?
+                unsafe {
+                    Some(Box::new((*storage.get()).__component__.remove(current)))
+                }
+            } else {
+                unreachable!()
+            }
+        } else {
+            None
+        }
+    }
+
+    fn peek<O, F: FnOnce(&Self) -> O>(entity: &EntityRef, f: F) -> Option<O> {
+        if let Some(current) = entity.__component__ {
+            if let Some(storage) = entity.components_storage.upgrade() {
+                // SAFETY: in theory we only access the component of the entity from the storage,
+                // so this is safe?
+                unsafe {
+                    if let Some(c) = (*storage.get()).__component__.get(current) {
+                        Some(f(c))
+                    } else {
+                        None
+                    }
+                }
+            } else {
+                unreachable!()
+            }
+        } else {
+            None
+        }
+    }
+
+    fn update<O, F: FnOnce(&mut Self) -> O>(entity: &mut EntityRef, f: F) -> Option<O> {
+        if let Some(current) = entity.__component__ {
+            if let Some(storage) = entity.components_storage.upgrade() {
+                // SAFETY: in theory we only access the component of the entity from the storage,
+                // so this is safe?
+                unsafe { 
+                    if let Some(c) = (*storage.get()).__component__.get_mut(current) {
+                        Some(f(c))
+                    } else {
+                        None
+                    }
+                }
+            } else {
+                unreachable!()
+            }
+        } else {
+            None
+        }
+    }
+}
+
+impl smec::EntityBase for EntityRef {
+    fn for_each_active_component(&self, mut f: impl FnMut(std::any::TypeId)) {
+        if self.__component__.is_some() {
+            f(std::any::TypeId::of::<A>());
+        }
+    }
+
+    fn for_each_component(&self, mut f: impl FnMut(std::any::TypeId, bool)) {
+        f(std::any::TypeId::of::<A>(), self.__component__.is_some());
+    }
+
+    fn for_all_components(mut f: impl FnMut(std::any::TypeId)) {
+        f(std::any::TypeId::of::<A>());
+    }
+}
+
+pub struct Entity {
+    __prop__: i32,
+    __component__: Option<Box<A>>
+}
+
+pub struct EntityRef {
+    __prop__: i32,
+    __component__: Option<usize>,
+    // This is necessary to use UnsafeCell otherwise we would not be able to get &'a or &'a mut references
+    // which is a big pain in the butt
+    components_storage: Weak<std::cell::UnsafeCell<EntityComponentsStorage>>
+}
+
+pub struct EntityComponentsStorage {
+    __component__: slab::Slab<A>,
+}
+
+fn main() {
+
+}
