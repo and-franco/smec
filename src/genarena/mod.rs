@@ -7,13 +7,16 @@
 //! the generation will be way less inclined to grow fast, which was a risk with the other code (if thousands
 //! or more entites were removed per second, this would be a reaity after a few years. If we want a persistent
 //! Arena over a few years, this is a necessity.
+//! * When Serializing/Deserializing, empty/free entries are kept (and not filtered out)
+
+use serde::{Serialize, Deserialize};
 
 mod iter;
 pub use iter::*;
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GenArena<T> {
     pub (crate) entries: Vec<Entry<T>>,
     /// Points to the next Free Entry. Free entries are are single-way linked list,
@@ -23,13 +26,13 @@ pub struct GenArena<T> {
     pub (crate) length: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Entry<T> {
     Free { next_generation: u64, next_free: Option<usize> },
     Occupied { generation: u64, value: T }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Index {
     pub index: usize,
     pub generation: u64,
