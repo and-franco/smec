@@ -21,8 +21,13 @@ slab = { git = "https://github.com/and-franco/slab.git", branch = "master"}
 serde = { version = "1", optional = true, features = ["derive"] }
 
 [dev-dependencies]
+criterion = "0.3"
 bincode = { version = "1" }
 
 [features]
 default = []
 use_serde = ["serde", "slab/serde"]
+
+[[bench]]
+name = "iter"
+harness = false
