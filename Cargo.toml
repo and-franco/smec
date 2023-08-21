@@ -11,11 +11,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
 hibitset = { version = "0.6.3", default-features = false }
 tuple_utils = "0.4"
 hashbrown = "0.11"
 paste = "1"
 # uncomment when #137 is merged
 # slab = { version = "0.4", features = ["serde"] }
-slab = { git = "https://github.com/and-franco/slab.git", branch = "master", features = ["serde"] }
+slab = { git = "https://github.com/and-franco/slab.git", branch = "master"}
+serde = { version = "1", optional = true, features = ["derive"] }
+
+[dev-dependencies]
+bincode = { version = "1" }
+
+[features]
+default = []
+use_serde = ["serde", "slab/serde"]

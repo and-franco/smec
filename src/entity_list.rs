@@ -40,6 +40,16 @@ impl<E: EntityRefBase> EntityList<E> {
         l
     }
 
+    pub fn from_raw(arena: GenArena<E>, components_storage: Rc<UnsafeCell<E::CS>>) -> Self {
+        let mut l = Self {
+            bitsets: HashMap::with_capacity(0),
+            entities: arena,
+            components_storage,
+        };
+        l.regenerate_all_component_bitsets();
+        l
+    }
+
     /// Insert an entity.
     ///
     /// Returns the ID of the entity you've just inserted.

@@ -47,11 +47,17 @@ pub trait EntityOwnedBase: EntityBase {
 
 pub trait EntityRefBase: EntityBase + Clone {
     type CS: ComponentsStorage;
+    // naked is the Ref struct but without the component storage part, used for serializing
+    type Naked: Clone;
     type Owned: EntityOwnedBase;
 
     fn from_owned(owned: Self::Owned, cs: &std::rc::Rc<std::cell::UnsafeCell<Self::CS>>) -> Self;
 
     fn to_owned(self, cs: &mut Self::CS) -> Self::Owned;
+
+    fn from_naked(naked: Self::Naked, cs: &std::rc::Rc<std::cell::UnsafeCell<Self::CS>>) -> Self;
+
+    fn as_naked(&self) -> Self::Naked;
 
     fn set_cs(&mut self, cs: std::rc::Weak<std::cell::UnsafeCell<Self::CS>>);
 }

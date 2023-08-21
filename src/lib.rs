@@ -10,3 +10,6 @@ mod macro_define;
 pub use macro_define::*;
 mod iter;
 pub use iter::*;
+
+#[cfg(feature = "use_serde")]
+mod serde;

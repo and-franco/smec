@@ -29,7 +29,8 @@ pub struct AgeProp {
     age: u32,
 }
 
-define_entity! { 
+define_entity! {
+    #[derive(Debug)]
     pub struct Entity {
         props => {
             common: CommonProp,

@@ -9,6 +9,7 @@
 //! Arena over a few years, this is a necessity.
 //! * When Serializing/Deserializing, empty/free entries are kept (and not filtered out)
 
+#[cfg(feature = "use_serde")]
 use serde::{Serialize, Deserialize};
 
 mod iter;
@@ -16,7 +17,7 @@ pub use iter::*;
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct GenArena<T> {
     pub (crate) entries: Vec<Entry<T>>,
     /// Points to the next Free Entry. Free entries are are single-way linked list,
@@ -26,13 +27,37 @@ pub struct GenArena<T> {
     pub (crate) length: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
+#[cfg_attr(feature = "use_serde", derive(Serialize, Deserialize))]
 pub enum Entry<T> {
     Free { next_generation: u64, next_free: Option<usize> },
     Occupied { generation: u64, value: T }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+impl<T> Entry<T> {
+    pub fn map<U, F>(self, f: F) -> Entry<U> where F: FnOnce(T) -> U {
+        match self {
+            Self::Free { next_generation, next_free } => Entry::Free { next_generation, next_free },
+            Self::Occupied { generation, value } => Entry::Occupied { generation, value: f(value) },
+        }
+    }
+
+    pub fn as_ref(&self) -> Entry<&T> {
+        match self {
+            Self::Free { next_generation, next_free } => Entry::Free {
+                next_generation: *next_generation,
+                next_free: *next_free
+            },
+            Self::Occupied { generation, value } => Entry::Occupied {
+                generation: *generation,
+                value
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "use_serde", derive(Serialize, Deserialize))]
 pub struct Index {
     pub index: usize,
     pub generation: u64,
@@ -55,6 +80,19 @@ pub const DEFAULT_ARENA_CAPACITY: usize = 32;
 impl<T> GenArena<T> {
     pub fn new() -> Self {
         Self::with_capacity(DEFAULT_ARENA_CAPACITY)
+    }
+
+    /// Internal usage only.
+    ///
+    /// Mostly used for EntityList::deserialize
+    #[cfg(feature = "use_serde")]
+    pub (crate) fn from_raw(entries: Vec<Entry<T>>, length: usize, next_free: Option<usize>) -> Self {
+        debug_assert!(length == entries.iter().filter(|e| matches!(e, Entry::Occupied { .. })).count());
+        Self {
+            entries,
+            length,
+            next_free
+        }
     }
 
     pub fn with_capacity(capacity: usize) -> Self {

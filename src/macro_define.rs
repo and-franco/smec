@@ -61,32 +61,8 @@
 
 #[macro_export]
 macro_rules! define_entity {
-    (   
-        serde;
-        $vis:vis struct $entityname:ident {
-            props => {
-                $( $propname:ident : $propt:ty),* $(,)*
-            } $(,)?
-            components => {
-                $( $componentname:ident => $componenttype:ty ),* $(,)*
-            } $(,)?
-        }) => {
-        define_entity! {
-            $vis struct $entityname {
-                props => {
-                    $(
-                        $propname : $propt,
-                    )*
-                },
-                components => {
-                    $(
-                        $componentname => $componenttype,
-                    )*
-                },
-            }
-        }
-    };
     (
+        common;
         $vis:vis struct $entityname:ident {
             props => {
                 $( $propname:ident : $propt:ty),* $(,)*
@@ -96,32 +72,7 @@ macro_rules! define_entity {
             } $(,)?
         }
     ) => {
-        $vis struct $entityname {
-            $(
-                pub $propname : $propt,
-            )*
-            $(
-                pub $componentname: Option<Box<$componenttype>>,
-            )*
-        }
-
         paste::paste! {
-        #[derive(Clone)]
-        $vis struct [<$entityname Ref>] {
-            $(
-                pub $propname : $propt,
-            )*
-            $(
-                pub $componentname: Option<usize>,
-            )*
-            components_storage: std::rc::Weak<::std::cell::UnsafeCell<[<$entityname ComponentsStorage>]>>
-        }
-
-        $vis struct [<$entityname ComponentsStorage>] {
-            $(
-                $componentname: slab::Slab<$componenttype>,
-            )*
-        }
 
         impl Clone for [<$entityname ComponentsStorage>] {
             fn clone(&self) -> Self {
@@ -331,6 +282,7 @@ macro_rules! define_entity {
         impl smec::EntityRefBase for [<$entityname Ref>] {
             type CS = [<$entityname ComponentsStorage>];
             type Owned = $entityname;
+            type Naked = [<$entityname RefNaked>];
 
             fn from_owned(mut owned: Self::Owned, cs: &std::rc::Rc<std::cell::UnsafeCell<Self::CS>>) -> Self {
                 let weak = std::rc::Rc::downgrade(cs);
@@ -363,6 +315,29 @@ macro_rules! define_entity {
                                 unreachable!()
                             }
                         }),
+                    )*
+                }
+            }
+
+            fn from_naked(naked: Self::Naked, cs: &std::rc::Rc<std::cell::UnsafeCell<Self::CS>>) -> Self {
+                Self {
+                    $(
+                        $propname : naked.$propname,
+                    )*
+                    $(
+                        $componentname : naked.$componentname,
+                    )*
+                    components_storage: std::rc::Rc::downgrade(cs)
+                }
+            }
+
+            fn as_naked(&self) -> Self::Naked {
+                Self::Naked {
+                    $(
+                        $propname : self.$propname.clone(),
+                    )*
+                    $(
+                        $componentname : self.$componentname,
                     )*
                 }
             }
@@ -422,4 +397,140 @@ macro_rules! define_entity {
             }
         }
     };
+    (   
+        serde;
+        $(#[derive( $( $derivety:path ),* ) ])?
+        $vis:vis struct $entityname:ident {
+            props => {
+                $( $propname:ident : $propt:ty),* $(,)*
+            } $(,)?
+            components => {
+                $( $componentname:ident => $componenttype:ty ),* $(,)*
+            } $(,)?
+        }
+    ) => {
+        paste::paste!{
+        #[derive(serde::Serialize, serde::Deserialize)]
+        $(#[derive( $( $derivety ),* )])?
+        $vis struct $entityname {
+            $(
+                pub $propname : $propt,
+            )*
+            $(
+                pub $componentname: Option<Box<$componenttype>>,
+            )*
+        }
+
+        #[derive(Clone)]
+        $vis struct [<$entityname Ref>] {
+            $(
+                pub $propname : $propt,
+            )*
+            $(
+                pub $componentname: Option<usize>,
+            )*
+            components_storage: std::rc::Weak<::std::cell::UnsafeCell<[<$entityname ComponentsStorage>]>>
+        }
+
+        #[derive(Clone)]
+        #[derive(serde::Serialize, serde::Deserialize)]
+        $vis struct [<$entityname RefNaked>] {
+            $(
+                pub $propname : $propt,
+            )*
+            $(
+                pub $componentname: Option<usize>,
+            )*
+        }
+
+        #[derive(serde::Serialize, serde::Deserialize)]
+        $vis struct [<$entityname ComponentsStorage>] {
+            $(
+                $componentname: slab::Slab<$componenttype>,
+            )*
+        }
+        }
+
+        smec::define_entity! {
+            common;
+            $vis struct $entityname {
+                props => {
+                    $(
+                        $propname: $propt,
+                    )*
+                },
+                components => {
+                    $(
+                        $componentname => $componenttype,
+                    )*
+                }
+            }
+        }
+    };
+    (
+        $(#[derive( $( $derivety:path ),* ) ])?
+        $vis:vis struct $entityname:ident {
+            props => {
+                $( $propname:ident : $propt:ty),* $(,)*
+            } $(,)?
+            components => {
+                $( $componentname:ident => $componenttype:ty ),* $(,)*
+            } $(,)?
+        }
+    ) => {
+        paste::paste! {
+        $(#[derive( $( $derivety ),* )])?
+        $vis struct $entityname {
+            $(
+                pub $propname : $propt,
+            )*
+            $(
+                pub $componentname: Option<Box<$componenttype>>,
+            )*
+        }
+
+        #[derive(Clone)]
+        $vis struct [<$entityname Ref>] {
+            $(
+                pub $propname : $propt,
+            )*
+            $(
+                pub $componentname: Option<usize>,
+            )*
+            components_storage: std::rc::Weak<::std::cell::UnsafeCell<[<$entityname ComponentsStorage>]>>
+        }
+
+        #[derive(Clone)]
+        $vis struct [<$entityname RefNaked>] {
+            $(
+                pub $propname : $propt,
+            )*
+            $(
+                pub $componentname: Option<usize>,
+            )*
+        }
+
+        $vis struct [<$entityname ComponentsStorage>] {
+            $(
+                $componentname: slab::Slab<$componenttype>,
+            )*
+        }
+        }
+
+        smec::define_entity! {
+            common;
+            $vis struct $entityname {
+                props => {
+                    $(
+                        $propname: $propt,
+                    )*
+                },
+                components => {
+                    $(
+                        $componentname => $componenttype,
+                    )*
+                }
+            }
+        }
+    }
 }
