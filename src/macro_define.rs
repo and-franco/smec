@@ -72,7 +72,7 @@ macro_rules! define_entity {
             } $(,)?
         }
     ) => {
-        paste::paste! {
+        $crate::paste::paste! {
 
         impl Clone for [<$entityname ComponentsStorage>] {
             fn clone(&self) -> Self {
@@ -124,7 +124,7 @@ macro_rules! define_entity {
                 }
             }
 
-            paste::paste! {
+            $crate::paste::paste! {
             impl smec::Component<[<$entityname Ref>]> for $componenttype {
                 fn set(self, entity: &mut EntityRef) {
                     let current = entity.$componentname;
@@ -256,7 +256,7 @@ macro_rules! define_entity {
             }
         }
 
-        paste::paste! {
+        $crate::paste::paste! {
         impl smec::EntityBase for [<$entityname Ref>] {
             fn for_each_active_component(&self, mut f: impl FnMut(std::any::TypeId)) {
                 $(
@@ -409,7 +409,7 @@ macro_rules! define_entity {
             } $(,)?
         }
     ) => {
-        paste::paste!{
+        $crate::paste::paste!{
         #[derive(serde::Serialize, serde::Deserialize)]
         $(#[derive( $( $derivety ),* )])?
         $vis struct $entityname {
@@ -478,7 +478,7 @@ macro_rules! define_entity {
             } $(,)?
         }
     ) => {
-        paste::paste! {
+        $crate::paste::paste! {
         $(#[derive( $( $derivety ),* )])?
         $vis struct $entityname {
             $(
