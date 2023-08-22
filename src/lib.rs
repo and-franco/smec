@@ -13,6 +13,8 @@ pub use iter::*;
 
 pub use paste;
 pub use slab;
+#[cfg(feature = "use_serde")]
+pub use serde;
 
 #[cfg(feature = "use_serde")]
-mod serde;
+mod serde_impl;

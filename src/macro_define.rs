@@ -422,7 +422,7 @@ macro_rules! define_entity {
         }
     ) => {
         $crate::paste::paste!{
-        #[derive(serde::Serialize, serde::Deserialize)]
+        #[derive($crate::serde::Serialize, $crate::serde::Deserialize)]
         $(#[derive( $( $derivety ),* )])?
         $vis struct $entityname {
             $(
@@ -445,7 +445,7 @@ macro_rules! define_entity {
         }
 
         #[derive(Clone)]
-        #[derive(serde::Serialize, serde::Deserialize)]
+        #[derive($crate::serde::Serialize, $crate::serde::Deserialize)]
         $vis struct [<$entityname RefNaked>] {
             $(
                 pub $propname : $propt,
@@ -455,10 +455,10 @@ macro_rules! define_entity {
             )*
         }
 
-        #[derive(serde::Serialize, serde::Deserialize)]
+        #[derive($crate::serde::Serialize, $crate::serde::Deserialize)]
         $vis struct [<$entityname ComponentsStorage>] {
             $(
-                $componentname: slab::Slab<$componenttype>,
+                $componentname: $crate::slab::Slab<$componenttype>,
             )*
         }
         }
@@ -524,7 +524,7 @@ macro_rules! define_entity {
 
         $vis struct [<$entityname ComponentsStorage>] {
             $(
-                $componentname: slab::Slab<$componenttype>,
+                $componentname: $crate::slab::Slab<$componenttype>,
             )*
         }
         }
