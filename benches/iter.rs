@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
 use smec::{EntityList, EntityBase, EntityOwnedBase, define_entity};
 use std::cell::Cell;

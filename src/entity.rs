@@ -90,6 +90,31 @@ pub trait EntityBase: Sized + 'static {
         self
     }
 
+    /// Returns the mutable component if there is one, otherwise fills default and then returns it
+    fn get_mut_or_default<C: Component<Self> + Default>(&mut self) -> &mut C {
+        if C::get(self).is_none() {
+            C::default().set(self);
+        };
+        // we defined the unit just above if it didn't exist
+        self.get_mut::<C>().unwrap()
+    }
+
+    /// Executes a fn on the component if there is one, otherwise fills default and then executes the fn
+    fn mutate_or_default<C: Component<Self> + Default, O, F: FnOnce(&mut C) -> O>(&mut self, f: F) -> O {
+        let c = self.get_mut_or_default();
+        f(c)
+    }
+
+    #[inline]
+    /// Mutates the component for the given entity.
+    ///
+    /// Mutations only apply to inner changes, not removal or creation of components. If the component does not exist
+    /// in the entity yet, the default one is inserted and used for the predicate.
+    fn with_mutation_or_default<C: Component<Self> + Default, F: FnOnce(&mut C)>(mut self, f: F) -> Self {
+        self.mutate_or_default(f);
+        self
+    }
+
     #[inline]
     /// Removes the given component for the given entity.
     fn with_removed<C: Component<Self>>(mut self) -> Self {
