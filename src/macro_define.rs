@@ -365,7 +365,7 @@ macro_rules! define_entity {
             fn new() -> Self {
                 Self {
                     $(
-                        $componentname: slab::Slab::new(),
+                        $componentname: $crate::slab::Slab::new(),
                     )*
                 }
             }
