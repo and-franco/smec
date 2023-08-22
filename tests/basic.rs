@@ -202,9 +202,9 @@ fn iter() {
     entity_list.remove(id_7);
 
     let all_entities: Vec<_> = entity_list.iter_all().map(|(i, _e)| i).collect();
-    let only_comp_a: Vec<_> = entity_list.iter::<(ComponentA,)>().map(|(i, _e)| i).collect();
-    let only_comp_b: Vec<_> = entity_list.iter::<(ComponentB,)>().map(|(i, _e)| i).collect();
-    let only_comp_c: Vec<_> = entity_list.iter::<(ComponentC,)>().map(|(i, _e)| i).collect();
+    let only_comp_a: Vec<_> = entity_list.iter_single::<ComponentA>().map(|(i, _e, _)| i).collect();
+    let only_comp_b: Vec<_> = entity_list.iter_single::<ComponentB>().map(|(i, _e, _)| i).collect();
+    let only_comp_c: Vec<_> = entity_list.iter_single::<ComponentC>().map(|(i, _e, _)| i).collect();
     let comp_a_and_b: Vec<_> = entity_list.iter::<(ComponentA, ComponentB)>().map(|(i, _e)| i).collect();
     let comp_a_and_c: Vec<_> = entity_list.iter::<(ComponentA, ComponentC)>().map(|(i, _e)| i).collect();
     let comp_b_and_c: Vec<_> = entity_list.iter::<(ComponentB, ComponentC)>().map(|(i, _e)| i).collect();

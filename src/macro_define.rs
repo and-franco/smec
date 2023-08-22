@@ -231,6 +231,18 @@ macro_rules! define_entity {
                     }
                 }
             }
+            
+            impl smec::RefComponent<[<$entityname Ref>]> for $componenttype {
+                #[inline]
+                fn get_single_cs(cs: &[<$entityname ComponentsStorage>]) -> &$crate::slab::Slab<Self> {
+                    &cs.$componentname
+                }
+
+                #[inline]
+                fn get_cs_id(entity: &[<$entityname Ref>]) -> Option<usize> {
+                    entity.$componentname
+                }
+            }
             }
         )*
 

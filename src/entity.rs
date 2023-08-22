@@ -1,5 +1,6 @@
 use crate::{ComponentsStorage};
 use std::any::TypeId;
+use slab::Slab;
 
 pub trait Component<E: Sized>: 'static + Clone {
     fn set(self, entity: &mut E);
@@ -16,6 +17,12 @@ pub trait Component<E: Sized>: 'static + Clone {
 
     // update component with the given predicate. You may return a custom result of your choice.
     fn update<O, F: FnOnce(&mut Self) -> O>(entity: &mut E, f: F) -> Option<O>;
+}
+
+pub trait RefComponent<E: Sized + EntityRefBase>: Component<E> {
+    fn get_single_cs(cs: &E::CS) -> &Slab<Self>;
+
+    fn get_cs_id(entity: &E) -> Option<usize>;
 }
 
 pub enum ChangeComponent<C> {

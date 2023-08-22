@@ -12,6 +12,7 @@ mod iter;
 pub use iter::*;
 
 pub use paste;
+pub use slab;
 
 #[cfg(feature = "use_serde")]
 mod serde;

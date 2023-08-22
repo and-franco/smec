@@ -1,7 +1,8 @@
 use crate::{
-    Component, EntityBase, EntityRefBase, EntityOwnedBase, EntityList, EntityId,
+    Component, RefComponent, EntityBase, EntityRefBase, EntityOwnedBase, EntityList, EntityId,
     genarena::{GenArena}
 };
+use slab::Slab;
 use hibitset::{BitIter, BitSet, BitSetLike, BitSetAll, BitSetAnd};
 use tuple_utils::Split;
 
@@ -10,20 +11,72 @@ use std::any::TypeId;
 use hashbrown::HashMap;
 
 impl<E: EntityRefBase> EntityList<E> {
+    /// Iterate over all entities
     pub fn iter_all<'a>(&'a self) -> impl Iterator<Item=(EntityId, &'a E)> {
         self.entities.iter()
     }
 
+    /// Iterate over all entities mutably
     pub fn iter_all_mut<'a>(&'a mut self) -> impl Iterator<Item=(EntityId, &'a mut E)> {
         self.entities.iter_mut()
     }
 
+    /// Iterate over all entities which have the component `C`, immutably.
+    ///
+    /// There is no mutable version of this, use iter::<(C,)>() if you need one
+    pub fn iter_single<'a, C: RefComponent<E>>(&'a self) -> SingleComponentIter<'a, E, C> {
+        SingleComponentIter::new(self)
+    }
+
+    /// Iterate over all entities which have the components (C1, C2, C3, ...)
+    /// 
+    /// Even if you want only one component, it must be a tuple.
+    /// 
+    /// # Example
+    /// 
+    /// `for (id, entity) in entities.iter::<(Speed,)>() { }`
     pub fn iter<'a, C: MultiComponent<'a, E>>(&'a self) -> MultiComponentIter<'a, E, C::BitSet> {
         C::iter(&self.bitsets, &self.entities)
     }
 
+    /// Iterate over all entities which have the components (C1, C2, C3, ...), mutably
+    /// 
+    /// # Example
+    /// 
+    /// `for (id, entity) in entities.iter_mut::<(Speed, Gravity)>() { }`
     pub fn iter_mut<'a, C: MultiComponent<'a, E>>(&'a mut self) -> MultiComponentIterMut<'a, E, C::BitSet> {
         C::iter_mut(&self.bitsets, &mut self.entities)
+    }
+}
+
+pub struct SingleComponentIter<'a, E: EntityRefBase, C: Component<E>> {
+    pub (crate) iter: BitIter<&'a BitSet>,
+    pub (crate) values: &'a GenArena<E>,
+    pub (crate) slab_ref: &'a Slab<C>,
+}
+
+impl<'a, E: EntityRefBase, C: RefComponent<E>> SingleComponentIter<'a, E, C> {
+    pub fn new(list: &'a EntityList<E>) -> SingleComponentIter<'a, E, C> {
+        let bitset = list.bitsets.get(&TypeId::of::<C>()).expect("FATAL: bitset is non-existant for composant");
+        let cs_ref: &E::CS = unsafe { &*list.components_storage.get() };
+        let slab_ref: &Slab<C> = C::get_single_cs(cs_ref);
+        SingleComponentIter {
+            iter: bitset.iter(),
+            values: &list.entities,
+            slab_ref,
+        }
+    }
+}
+
+impl<'a, E: EntityBase, B: BitSetLike> Iterator for MultiComponentIter<'a, E, B> {
+    type Item = (EntityId, &'a E);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|index| {
+            self.values.get_raw(index as usize)
+                .map(|(v, g)| (EntityId::new(index as usize, g), v))
+                .expect(FATAL_ERR_BITSET)
+        })
     }
 }
 
@@ -59,19 +112,25 @@ impl<'a, E: EntityBase, B: BitSetLike> MultiComponentIterMut<'a, E, B> {
     }
 }
 
-const FATAL_ERR: &str = r##"
+const FATAL_ERR_BITSET: &str = r##"
     !!!!FATAL: bitset is out of date, bitset returned true for an entity, but no entity exists at this location!!!! \
     Check that your code adds components and entities via the legal methods!"
 "##;
+const FATAL_ERR_CS: &str = r##"!!!!FATAL: Component Storage does not have content that is referenced by entity!!!!"##;
 
-impl<'a, E: EntityBase, B: BitSetLike> Iterator for MultiComponentIter<'a, E, B> {
-    type Item = (EntityId, &'a E);
+impl<'a, E: EntityRefBase, C: RefComponent<E>> Iterator for SingleComponentIter<'a, E, C> {
+    type Item = (EntityId, &'a E, &'a C);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|index| {
             self.values.get_raw(index as usize)
-                .map(|(v, g)| (EntityId::new(index as usize, g), v))
-                .expect(FATAL_ERR)
+                .map(|(v, g)| (
+                    EntityId::new(index as usize, g),
+                    v,
+                    self.slab_ref.get(C::get_cs_id(v).expect(FATAL_ERR_BITSET))
+                    .expect(FATAL_ERR_CS)
+                ))
+                .expect(FATAL_ERR_BITSET)
         })
     }
 }
@@ -84,7 +143,7 @@ impl<'a, E: EntityBase, B: BitSetLike> Iterator for MultiComponentIterMut<'a, E,
             let index = index as usize;
             let (id, v) = self.values.get_raw_mut(index)
                 .map(|(v, g)| (EntityId::new(index, g), v))
-                .expect(FATAL_ERR);
+                .expect(FATAL_ERR_BITSET);
         
             #[cfg(debug_assertions)] {
                 // check that n is strictly monotonic increasing,
@@ -166,11 +225,3 @@ multi_component_impl!(C1, C2, C3, C4, C5);
 multi_component_impl!(C1, C2, C3, C4, C5, C6);
 multi_component_impl!(C1, C2, C3, C4, C5, C6, C7);
 multi_component_impl!(C1, C2, C3, C4, C5, C6, C7, C8);
-multi_component_impl!(C1, C2, C3, C4, C5, C6, C7, C8, C9);
-multi_component_impl!(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10);
-multi_component_impl!(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11);
-multi_component_impl!(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12);
-multi_component_impl!(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13);
-multi_component_impl!(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14);
-multi_component_impl!(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15);
-multi_component_impl!(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15, C16);

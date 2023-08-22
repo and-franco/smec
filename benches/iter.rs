@@ -54,11 +54,18 @@ fn generate_single_list(list_size: u32) -> EntityList<EntityRef> {
     entity_list
 }
 
-fn update_single_list(list: &mut EntityList<EntityRef>) {
+fn update_single_list_mut(list: &mut EntityList<EntityRef>) {
     for (_i, e) in list.iter_mut::<(Speed,)>() {
         let Speed {x: speed_x, y: speed_y } = e.get::<Speed>().unwrap();
         e.pos.x.set(e.pos.x.get() + speed_x.get());
         e.pos.y.set(e.pos.y.get() + speed_y.get());
+    }
+}
+
+fn update_single_list(list: &EntityList<EntityRef>) {
+    for (_i, e, speed) in list.iter_single::<Speed>() {
+        e.pos.x.set(e.pos.x.get() + speed.x.get());
+        e.pos.y.set(e.pos.y.get() + speed.y.get());
     }
 }
 
@@ -216,13 +223,24 @@ fn maybe_update_dual_component_list(list: &mut EntityList<EntityRef>) {
     }
 }
 
+pub fn iter_single_component_mut(c: &mut Criterion) {
+    let mut group = c.benchmark_group("single_component_mut");
+    for size in [100, 1_000, 10_000, 100_000, 1_000_000].iter() {
+        group.throughput(Throughput::Elements(*size as u64));
+        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+            let mut list = generate_single_list(size as u32);
+            b.iter(|| update_single_list_mut(&mut list))
+        });
+    }
+}
+
 pub fn iter_single_component(c: &mut Criterion) {
     let mut group = c.benchmark_group("single_component");
     for size in [100, 1_000, 10_000, 100_000, 1_000_000].iter() {
         group.throughput(Throughput::Elements(*size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
-            let mut list = generate_single_list(size as u32);
-            b.iter(|| update_single_list(&mut list))
+            let list = generate_single_list(size as u32);
+            b.iter(|| update_single_list(&list))
         });
     }
 }
