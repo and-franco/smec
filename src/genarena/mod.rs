@@ -69,6 +69,12 @@ impl Index {
     }
 }
 
+impl std::fmt::Display for Index {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#07x}#{:03}", self.index, self.generation)
+    }
+}
+
 impl<T> Default for GenArena<T> {
     fn default() -> GenArena<T> {
         Self::new()
