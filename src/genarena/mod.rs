@@ -56,7 +56,7 @@ impl<T> Entry<T> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "use_serde", derive(Serialize, Deserialize))]
 pub struct Index {
     pub index: usize,
@@ -72,6 +72,12 @@ impl Index {
 impl std::fmt::Display for Index {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:#07x}#{:03}", self.index, self.generation)
+    }
+}
+
+impl std::fmt::Debug for Index {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#08x}#{:04}", self.index, self.generation)
     }
 }
 
