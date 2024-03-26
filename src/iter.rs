@@ -12,7 +12,7 @@ use hashbrown::HashMap;
 
 impl<E: EntityRefBase> EntityList<E> {
     /// Iterate over all entities
-    pub fn iter_all<'a>(&'a self) -> impl Iterator<Item=(EntityId, &'a E)> {
+    pub fn iter_all<'a>(&'a self) -> impl Iterator<Item=(EntityId, &'a E)> + Clone {
         self.entities.iter()
     }
 
@@ -53,6 +53,16 @@ pub struct SingleComponentIter<'a, E: EntityRefBase, C: Component<E>> {
     pub (crate) iter: BitIter<&'a BitSet>,
     pub (crate) values: &'a GenArena<E>,
     pub (crate) slab_ref: &'a Slab<C>,
+}
+
+impl<'a, E: EntityRefBase, C: Component<E>> Clone for SingleComponentIter<'a, E, C> {
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            values: self.values,
+            slab_ref: self.slab_ref,
+        }
+    }
 }
 
 impl<'a, E: EntityRefBase, C: RefComponent<E>> SingleComponentIter<'a, E, C> {
