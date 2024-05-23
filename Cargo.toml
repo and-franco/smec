@@ -15,9 +15,7 @@ hibitset = { version = "0.6.3", default-features = false }
 tuple_utils = "0.4"
 hashbrown = "0.11"
 paste = "1"
-# uncomment when #137 is merged
-# slab = { version = "0.4", features = ["serde"] }
-slab = { git = "https://github.com/and-franco/slab.git", branch = "master"}
+slab = "0.4.9"
 serde = { version = "1", optional = true, features = ["derive"] }
 
 [dev-dependencies]
